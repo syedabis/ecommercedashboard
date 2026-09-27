@@ -51,13 +51,31 @@ export interface EcommerceDashboardData {
 
 export async function fetchEcommerceSheetData(): Promise<EcommerceDashboardData | null> {
   try {
-    const credsPath = path.join(process.cwd(), "proposal-493608-b0e3f0115d99.json");
-    if (!fs.existsSync(credsPath)) {
-      console.error("Service account credentials file not found at:", credsPath);
-      return null;
+    let creds: {
+      client_email: string;
+      token_uri: string;
+      private_key: string;
+    } | null = null;
+
+    if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      try {
+        creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
+      } catch (err) {
+        console.error("Failed to parse GOOGLE_SERVICE_ACCOUNT_KEY env variable:", err);
+      }
     }
 
-    const creds = JSON.parse(fs.readFileSync(credsPath, "utf8"));
+    if (!creds) {
+      const credsPath = path.join(process.cwd(), "proposal-493608-b0e3f0115d99.json");
+      if (fs.existsSync(credsPath)) {
+        creds = JSON.parse(fs.readFileSync(credsPath, "utf8"));
+      }
+    }
+
+    if (!creds || !creds.client_email || !creds.private_key) {
+      console.error("Google service account credentials not found in env or file.");
+      return null;
+    }
     const now = Math.floor(Date.now() / 1000);
     const header = { alg: "RS256", typ: "JWT" };
     const claim = {
