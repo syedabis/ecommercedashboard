@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Subscribe } from "@tanstack/react-table";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,8 +18,16 @@ import type { DataTableFeatures } from "@/lib/data-table-features";
 
 import type { OrderRow } from "./schema";
 
-function formatOrderDate(date: string) {
-  return format(parseISO(date), "h:mm a, d MMM yyyy");
+function formatOrderDate(dateStr: string) {
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return format(d, "h:mm a, d MMM yyyy");
+    }
+  } catch {
+    // ignore
+  }
+  return dateStr;
 }
 
 function PaymentBadge({ status }: { status: OrderRow["payment"] }) {

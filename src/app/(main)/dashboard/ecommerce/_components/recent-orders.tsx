@@ -18,6 +18,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { dataTableFeatures } from "@/lib/data-table-features";
+import type { EcommerceDashboardData } from "@/lib/google-sheets";
 
 import { recentOrdersColumns } from "./recent-orders-table/columns";
 import recentOrdersData from "./recent-orders-table/data.json";
@@ -28,9 +29,13 @@ import {
 } from "./recent-orders-table/formatters";
 import { type OrderFilter, type OrderRow, orderFilters } from "./recent-orders-table/schema";
 
-const recentOrders = recentOrdersData as OrderRow[];
+const fallbackOrders = recentOrdersData as OrderRow[];
 
-export function RecentOrders() {
+interface RecentOrdersProps {
+  orders?: EcommerceDashboardData["recentOrders"];
+}
+
+export function RecentOrders({ orders }: RecentOrdersProps) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -39,9 +44,24 @@ export function RecentOrders() {
     pageSize: 10,
   });
 
+  const formattedOrders: OrderRow[] = React.useMemo(() => {
+    if (orders && orders.length > 0) {
+      return orders.map((o) => ({
+        id: o.id,
+        date: o.date,
+        customer: `${o.customer} (${o.country})`,
+        payment: o.status === "Returned" ? "Refunded" : "Paid",
+        total: o.total,
+        items: `${o.itemsCount} ${o.itemsCount === 1 ? "item" : "items"}`,
+        fulfillment: o.status === "Returned" ? "Returned" : "Fulfilled",
+      }));
+    }
+    return fallbackOrders;
+  }, [orders]);
+
   const table = useTable({
     features: dataTableFeatures,
-    data: recentOrders,
+    data: formattedOrders,
     columns: recentOrdersColumns,
     state: {
       rowSelection,
